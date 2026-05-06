@@ -7,6 +7,9 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import ArticlePage from "./pages/ArticlePage.tsx";
+import SuggestPage from "./pages/SuggestPage.tsx";
+import AdminSubmissions from "./pages/AdminSubmissions.tsx";
+import { FoodSommelier } from "./components/FoodSommelier.tsx";
 
 const queryClient = new QueryClient();
 
@@ -16,9 +19,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <FoodSommelier />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/article/:slug" element={<ArticlePage />} />
+          <Route path="/suggest" element={<SuggestPage />} />
+          <Route path="/admin/submissions" element={<AdminSubmissions />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

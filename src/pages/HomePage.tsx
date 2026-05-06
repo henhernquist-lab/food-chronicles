@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { articles, categories } from "@/data/articles";
 import { articleImages } from "@/data/articleImages";
 import { ArticleCard } from "@/components/ArticleCard";
+import { KitchenModeToggle } from "@/components/KitchenModeToggle";
+import { DigestSignup } from "@/components/DigestSignup";
 import { Search, Dice5 } from "lucide-react";
 
 export default function HomePage() {
@@ -28,14 +30,28 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Masthead */}
       <header className="border-b border-border/50 py-8">
-        <div className="container max-w-6xl mx-auto px-4 text-center">
-          <h1 className="font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
-            THE FOOD CHRONICLE
-          </h1>
-          <div className="w-48 h-px mx-auto mt-3 bg-gradient-to-r from-transparent via-primary to-transparent" />
-          <p className="mt-3 text-muted-foreground text-sm tracking-[0.2em] uppercase">
-            The hidden histories of what you eat
-          </p>
+        <div className="container max-w-6xl mx-auto px-4">
+          {/* Top bar: Kitchen Mode toggle + Suggest a Food link */}
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              to="/suggest"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              📬 Suggest a Food
+            </Link>
+            <KitchenModeToggle />
+          </div>
+
+          {/* Masthead title */}
+          <div className="text-center">
+            <h1 className="font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
+              THE FOOD CHRONICLE
+            </h1>
+            <div className="w-48 h-px mx-auto mt-3 bg-gradient-to-r from-transparent via-primary to-transparent" />
+            <p className="mt-3 text-muted-foreground text-sm tracking-[0.2em] uppercase">
+              The hidden histories of what you eat
+            </p>
+          </div>
         </div>
       </header>
 
@@ -100,15 +116,15 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Newsletter */}
+      {/* Newsletter / Footer */}
       <div className="border-t border-border/50 py-16">
-        <div className="container max-w-xl mx-auto px-4 text-center">
-          <h3 className="font-serif text-2xl font-bold mb-2">Get the daily food story</h3>
-          <p className="text-muted-foreground text-sm mb-6">A new fascinating food history delivered to your inbox every morning.</p>
-          <form onSubmit={e => { e.preventDefault(); }} className="flex gap-2">
-            <input placeholder="your@email.com" className="flex-1 bg-secondary border border-border rounded-sm px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
-            <button className="px-6 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm hover:opacity-90 transition-opacity">Subscribe</button>
-          </form>
+        <div className="container max-w-3xl mx-auto px-4">
+          <DigestSignup />
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <Link to="/suggest" className="hover:text-primary transition-colors">📬 Suggest a Food</Link>
+            <span>·</span>
+            <Link to="/suggest" className="hover:text-primary transition-colors">📋 Coming Soon</Link>
+          </div>
         </div>
       </div>
     </div>
