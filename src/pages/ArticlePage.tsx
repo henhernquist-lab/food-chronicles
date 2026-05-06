@@ -13,6 +13,7 @@ import { AffiliateProducts } from "@/components/AffiliateProducts";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { DigestSignup } from "@/components/DigestSignup";
 import { useParallaxEffects } from "@/hooks/useParallaxEffects";
+import { YouTubeSection } from "@/components/YouTubeSection";
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -164,6 +165,9 @@ export default function ArticlePage() {
             </div>
           </div>
         </div>
+
+        {/* ── YouTube: Curated documentary video ─────────────────────── */}
+        <YouTubeSection article={article} />
 
         {/* ── Feature 8: Flavor Web D3 Diagram ──────────────────────────── */}
         <FlavorWeb food={article.food} />
