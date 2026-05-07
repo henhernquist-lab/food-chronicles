@@ -158,7 +158,7 @@ export function CinematicHero({ article, staticImage }: CinematicHeroProps) {
           {article.teaser}
         </p>
         <div className="flex items-center gap-4 text-sm text-white/60 mt-4">
-          <span>The Food Chronicle AI</span>
+          <span>{article.category}</span>
           <span>·</span>
           <span>8 min read</span>
           <span>·</span>
