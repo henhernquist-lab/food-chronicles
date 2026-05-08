@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { gsap } from "gsap";
 import { articles, categories } from "@/data/articles";
 import { articleImages } from "@/data/articleImages";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -18,13 +19,56 @@ export default function HomePage() {
     return matchCat && matchSearch;
   });
 
+  const [tagline, setTagline] = useState("");
+  const fullTagline = "The hidden histories of what you eat";
+
   const hero = filtered[0];
   const rest = filtered.slice(1);
+
+  const [heroTitleChars, setHeroTitleChars] = useState<string[]>([]);
 
   const randomArticle = () => {
     const rand = articles[Math.floor(Math.random() * articles.length)];
     navigate(`/article/${rand.slug}`);
   };
+
+  useEffect(() => {
+    if (hero) {
+      setHeroTitleChars(hero.title.split(""));
+    }
+  }, [hero]);
+
+  useEffect(() => {
+    let index = 0;
+    const interval = window.setInterval(() => {
+      setTagline(fullTagline.slice(0, index + 1));
+      index += 1;
+      if (index >= fullTagline.length) {
+        window.clearInterval(interval);
+      }
+    }, 50);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    gsap.from(".article-card", {
+      y: 60,
+      opacity: 0,
+      duration: 0.6,
+      stagger: 0.08,
+      ease: "power2.out",
+      delay: 0.3,
+    });
+
+    gsap.from(".hero-title-char", {
+      y: -40,
+      opacity: 0,
+      duration: 0.6,
+      stagger: 0.04,
+      ease: "power2.out",
+      delay: 0.5,
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,12 +88,12 @@ export default function HomePage() {
 
           {/* Masthead title */}
           <div className="text-center">
-            <h1 className="masthead-shimmer font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
+            <h1 className="masthead-title font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
               THE FOOD CHRONICLE
             </h1>
-            <div className="w-48 h-px mx-auto mt-3 bg-gradient-to-r from-transparent via-primary to-transparent" />
-            <p className="mt-3 text-muted-foreground text-sm tracking-[0.2em] uppercase">
-              The hidden histories of what you eat
+            <div className="w-48 h-px mx-auto mt-3 gold-underline-animated" />
+            <p className="mt-3 text-muted-foreground text-sm tracking-[0.2em] uppercase typewriter-tagline">
+              {tagline}
             </p>
           </div>
         </div>
@@ -92,17 +136,32 @@ export default function HomePage() {
       {/* Hero Article */}
       {hero && (
         <div className="container max-w-6xl mx-auto px-4 pb-12">
-          <Link to={`/article/${hero.slug}`} className="group block interactive">
-            <div className="relative overflow-hidden rounded-sm">
-              <img src={articleImages[hero.slug]} alt={hero.title} width={1280} height={720} className="w-full aspect-[21/9] object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-                <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/30 text-primary rounded-sm mb-3">{hero.category}</span>
-                <h2 className="font-serif text-3xl md:text-5xl font-bold leading-tight mb-3">
-                  {hero.emoji} {hero.title}
+          <Link to={`/article/${hero.slug}`} className="group block interactive hero-featured">
+            <div className="relative overflow-hidden rounded-[2rem] min-h-[75vh] hero-hero-image">
+              <img
+                src={articleImages[hero.slug]}
+                alt={hero.title}
+                width={1280}
+                height={720}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(12,10,8,0.5)_60%,rgba(12,10,8,0.98)_100%)]" />
+              <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(to_right,rgba(12,10,8,0.4)_0%,transparent_30%,transparent_70%,rgba(12,10,8,0.4)_100%)]" />
+              <div className="absolute inset-0 hero-vignette pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/0 via-black/20 to-black/90" />
+              <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 hero-copy">
+                <span className="inline-flex items-center gap-2 rounded-full border border-gold-soft bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.22em] text-gold">
+                  <span className="live-dot" /> TODAY&apos;S STORY
+                </span>
+                <h2 className="mt-6 flex flex-wrap gap-1 text-4xl md:text-6xl font-serif font-bold leading-tight text-foreground hero-title">
+                  {heroTitleChars.map((letter, index) => (
+                    <span key={`${hero.slug}-${index}`} className="hero-title-char inline-block">{letter}</span>
+                  ))}
                 </h2>
-                <p className="text-muted-foreground max-w-2xl text-sm md:text-base">{hero.teaser}</p>
-                <span className="inline-block mt-4 text-primary text-sm font-medium">Read the full story →</span>
+                <p className="mt-4 max-w-3xl text-muted-foreground text-base md:text-lg">{hero.teaser}</p>
+                <span className="hero-cta inline-flex mt-6 rounded-full border border-gold-soft bg-transparent px-6 py-3 text-sm font-semibold text-gold transition-all duration-300">
+                  Read the full story
+                </span>
               </div>
             </div>
           </Link>

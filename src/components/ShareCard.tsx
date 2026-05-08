@@ -16,7 +16,7 @@ function generateShareImage(article: Article): Promise<Blob> {
     const ctx = canvas.getContext("2d")!;
 
     // Background
-    ctx.fillStyle = "#0C0A08";
+    ctx.fillStyle = "var(--bg-dark)";
     ctx.fillRect(0, 0, 1080, 1080);
 
     // Subtle vignette gradient
@@ -29,8 +29,8 @@ function generateShareImage(article: Article): Promise<Blob> {
     // Gold top bar
     const goldGrad = ctx.createLinearGradient(0, 0, 1080, 0);
     goldGrad.addColorStop(0, "transparent");
-    goldGrad.addColorStop(0.3, "#C9A84C");
-    goldGrad.addColorStop(0.7, "#C9A84C");
+    goldGrad.addColorStop(0.3, "var(--gold-share)");
+    goldGrad.addColorStop(0.7, "var(--gold-share)");
     goldGrad.addColorStop(1, "transparent");
     ctx.fillStyle = goldGrad;
     ctx.fillRect(0, 0, 1080, 3);
@@ -41,7 +41,7 @@ function generateShareImage(article: Article): Promise<Blob> {
     ctx.fillText(article.emoji, 540, 340);
 
     // Title
-    ctx.fillStyle = "#F5E6C8";
+    ctx.fillStyle = "var(--text-light)";
     ctx.font = "bold 56px 'Georgia', serif";
     ctx.textAlign = "center";
     const titleWords = article.title.split(" ");
@@ -61,7 +61,7 @@ function generateShareImage(article: Article): Promise<Blob> {
 
     // Most shocking fast fact (gold)
     const fact = article.fast_facts[0] ?? article.teaser;
-    ctx.fillStyle = "#C9A84C";
+    ctx.fillStyle = "var(--gold-share)";
     ctx.font = "italic 32px 'Georgia', serif";
     ctx.textAlign = "center";
     const factWords = fact.split(" ");
@@ -89,7 +89,7 @@ function generateShareImage(article: Article): Promise<Blob> {
     ctx.stroke();
 
     // Branding
-    ctx.fillStyle = "#C9A84C";
+    ctx.fillStyle = "var(--gold-share)";
     ctx.font = "bold 28px 'Georgia', serif";
     ctx.textAlign = "center";
     ctx.fillText("THE FOOD CHRONICLE", 540, 980);
