@@ -10,6 +10,7 @@ import ArticlePage from "./pages/ArticlePage.tsx";
 import SuggestPage from "./pages/SuggestPage.tsx";
 import AdminSubmissions from "./pages/AdminSubmissions.tsx";
 import { FoodSommelier } from "./components/FoodSommelier.tsx";
+import { SpringCursor } from "./components/SpringCursor.tsx";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <SpringCursor />
       <BrowserRouter>
         <FoodSommelier />
         <Routes>

@@ -85,7 +85,7 @@ export default function ArticlePage() {
       {/* Back button */}
       <Link
         to="/"
-        className="fixed top-4 left-4 z-40 text-xs text-muted-foreground hover:text-primary transition-colors"
+        className="fixed top-4 left-4 z-40 text-xs text-muted-foreground hover:text-primary transition-colors interactive"
       >
         ← Back
       </Link>
@@ -191,8 +191,8 @@ export default function ArticlePage() {
           You might also like
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {related.map(a => (
-            <ArticleCard key={a.id} article={a} />
+          {related.map((a, index) => (
+            <ArticleCard key={a.id} article={a} delay={index * 100} />
           ))}
         </div>
       </div>

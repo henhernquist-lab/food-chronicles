@@ -35,7 +35,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6">
             <Link
               to="/suggest"
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors interactive"
             >
               📬 Suggest a Food
             </Link>
@@ -44,7 +44,7 @@ export default function HomePage() {
 
           {/* Masthead title */}
           <div className="text-center">
-            <h1 className="font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
+            <h1 className="masthead-shimmer font-serif text-4xl md:text-6xl font-bold tracking-tight text-gold-gradient">
               THE FOOD CHRONICLE
             </h1>
             <div className="w-48 h-px mx-auto mt-3 bg-gradient-to-r from-transparent via-primary to-transparent" />
@@ -68,7 +68,7 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{articles.length} food histories</span>
-          <button onClick={randomArticle} className="p-2 rounded-sm bg-secondary hover:bg-primary/20 transition-colors" title="Random article">
+          <button onClick={randomArticle} className="p-2 rounded-sm bg-secondary hover:bg-primary/20 transition-colors interactive" title="Random article">
             <Dice5 className="w-4 h-4 text-primary" />
           </button>
         </div>
@@ -81,7 +81,7 @@ export default function HomePage() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-sm whitespace-nowrap transition-colors ${activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              className={`px-4 py-1.5 text-xs font-medium rounded-sm whitespace-nowrap transition-colors interactive ${activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
             >
               {cat}
             </button>
@@ -92,7 +92,7 @@ export default function HomePage() {
       {/* Hero Article */}
       {hero && (
         <div className="container max-w-6xl mx-auto px-4 pb-12">
-          <Link to={`/article/${hero.slug}`} className="group block">
+          <Link to={`/article/${hero.slug}`} className="group block interactive">
             <div className="relative overflow-hidden rounded-sm">
               <img src={articleImages[hero.slug]} alt={hero.title} width={1280} height={720} className="w-full aspect-[21/9] object-cover transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -112,7 +112,9 @@ export default function HomePage() {
       {/* Article Grid */}
       <div className="container max-w-6xl mx-auto px-4 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {rest.map(a => <ArticleCard key={a.id} article={a} />)}
+          {rest.map((a, index) => (
+            <ArticleCard key={a.id} article={a} delay={index * 100} />
+          ))}
         </div>
       </div>
 
