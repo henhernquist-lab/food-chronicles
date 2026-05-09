@@ -1,9 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESIGN TOKENS  (shadcn HSL vars — kept for component compatibility)
+───────────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
     --background: 24 18% 4%;
@@ -38,7 +41,7 @@
 
     --herb: 140 26% 42%;
     --herb-foreground: 36 25% 95%;
-    
+
     --sidebar-background: 24 15% 6%;
     --sidebar-foreground: 36 25% 90%;
     --sidebar-primary: 40 55% 58%;
@@ -51,23 +54,391 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   FOOD-CHRONICLES1 DESIGN SYSTEM  (raw hex vars for visual effects)
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg-primary:   #0C0A08;
+  --bg-surface:   #141009;
+  --bg-elevated:  #1C1510;
+
+  --gold-bright:  #FFD700;
+  --gold-warm:    #D4A853;
+  --gold-deep:    #8B6914;
+  --spice-red:    #C24B2A;
+  --herb-green:   #4A7C59;
+  --cream:        #FAF0DC;
+
+  --gold-glow:    rgba(212, 168, 83, 0.4);
+  --red-glow:     rgba(194, 75, 42, 0.35);
+  --teal-glow:    rgba(74, 124, 130, 0.35);
+  --purple-glow:  rgba(155, 89, 182, 0.35);
+  --amber-glow:   rgba(230, 165, 60, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE RESET & BODY
+───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    background: linear-gradient(135deg, #0C0A08, #100C06, #0E0A05);
+    background-size: 400% 400%;
+    animation: bgshift 20s ease infinite;
+    min-height: 100vh;
+  }
+}
+
+/* Animated background gradient */
+@keyframes bgshift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CUSTOM CURSOR  (desktop only — from food-chronicles1)
+───────────────────────────────────────────────────────────────────────────── */
+@media (hover: hover) and (pointer: fine) {
+  html, body, * { cursor: none !important; }
+  a, button, input, textarea, [role='button'] { cursor: none !important; }
+}
+
+.tfc-cursor {
+  position: fixed;
+  top: 0; left: 0;
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--gold-warm);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: difference;
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1),
+              height 0.25s cubic-bezier(0.4,0,0.2,1),
+              background-color 0.25s,
+              border-color 0.25s,
+              opacity 0.2s;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+.tfc-cursor.is-hover {
+  width: 50px; height: 50px;
+  background: rgba(212, 168, 83, 0.18);
+  border-color: var(--gold-bright);
+}
+.tfc-cursor.is-text {
+  width: 4px; height: 24px;
+  border-radius: 1px;
+  background: var(--gold-warm);
+  border: none;
+}
+.tfc-cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 4px; height: 4px;
+  background: var(--gold-bright);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .tfc-cursor, .tfc-cursor-dot { display: none !important; }
+  html, body, * { cursor: auto !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0C0A08; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8B6914, #D4A853);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #D4A853, #FFD700);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TEXT SELECTION
+───────────────────────────────────────────────────────────────────────────── */
+::selection {
+  background: var(--gold-warm);
+  color: var(--bg-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MASTHEAD TITLE SHIMMER
+───────────────────────────────────────────────────────────────────────────── */
+.masthead-title {
+  background: linear-gradient(
+    90deg,
+    #8B6914 0%,
+    #D4A853 30%,
+    #FFD700 50%,
+    #D4A853 70%,
+    #8B6914 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: goldshine 4s linear infinite;
+  position: relative;
+}
+.masthead-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmersweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes goldshine { to { background-position: 200% center; } }
+@keyframes shimmersweep {
+  0%, 100% { background-position: -100% 0; }
+  50%       { background-position: 200% 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GLASS CARD
+───────────────────────────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ARTICLE CARD  (hover lift + ken burns + title underline + emoji bounce)
+───────────────────────────────────────────────────────────────────────────── */
+.article-card {
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.45s ease,
+              border-color 0.4s ease;
+  will-change: transform;
+}
+.article-card:hover {
+  transform: translateY(-8px) scale(1.01);
+}
+
+.kenburns {
+  transform: scale(1);
+  transition: transform 8s ease-out;
+}
+.article-card:hover .kenburns {
+  transform: scale(1.08);
+}
+
+.title-underline {
+  background-image: linear-gradient(var(--gold-warm), var(--gold-warm));
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.45s ease;
+  display: inline;
+  padding-bottom: 2px;
+}
+.article-card:hover .title-underline {
+  background-size: 100% 1px;
+}
+
+@keyframes emojibounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3) rotate(-6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.article-card:hover .food-emoji {
+  animation: emojibounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CATEGORY TAG PULSE
+───────────────────────────────────────────────────────────────────────────── */
+.cat-tag-pulse { animation: catpulse 2.5s ease-in-out infinite; }
+@keyframes catpulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIVE DOT  (pulsing red indicator)
+───────────────────────────────────────────────────────────────────────────── */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #FF4444;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4);
+  animation: livepulse 1.5s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes livepulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.6); }
+  70%  { box-shadow: 0 0 0 12px rgba(255, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIQUID FILL BUTTON
+───────────────────────────────────────────────────────────────────────────── */
+.liquid-btn {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid var(--gold-warm);
+  color: var(--gold-warm);
+  padding: 0.9rem 2rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  transition: color 0.3s ease;
+}
+.liquid-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--gold-warm), var(--gold-bright));
+  transform: translateY(100%);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.liquid-btn:hover { color: var(--bg-primary); }
+.liquid-btn:hover::before { transform: translateY(0); }
+.liquid-btn > span { position: relative; z-index: 1; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DROP CAP
+───────────────────────────────────────────────────────────────────────────── */
+.drop-cap::first-letter {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 5rem;
+  line-height: 0.9;
+  float: left;
+  margin: 0.4rem 0.6rem 0 0;
+  color: var(--gold-warm);
+  text-shadow: 0 2px 20px var(--gold-glow);
+  background: linear-gradient(180deg, #FFD700, #8B6914);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   READING SPOTLIGHT  (article paragraphs fade in as they enter viewport)
+───────────────────────────────────────────────────────────────────────────── */
+.article-paragraph {
+  opacity: 0.55;
+  transition: opacity 0.5s ease;
+}
+.article-paragraph.in-view {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PULL QUOTE
+───────────────────────────────────────────────────────────────────────────── */
+.pull-quote {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.5rem, 3.2vw, 2.4rem);
+  line-height: 1.3;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--gold-warm);
+  border-left: 4px solid var(--gold-warm);
+  padding: 1.5rem 0 1.5rem 2rem;
+  margin: 3rem 0;
+  background: linear-gradient(90deg, rgba(212, 168, 83, 0.06), transparent 60%);
+  position: relative;
+}
+.pull-quote::before {
+  content: '"';
+  position: absolute;
+  top: -1rem;
+  left: -0.5rem;
+  font-size: 5rem;
+  color: var(--gold-deep);
+  opacity: 0.4;
+  line-height: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ORNAMENTAL DIVIDER
+───────────────────────────────────────────────────────────────────────────── */
+.divider-orn {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 3.5rem auto;
+  color: var(--gold-warm);
+  opacity: 0.7;
+}
+.divider-orn::before, .divider-orn::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEARCH INPUT FOCUS GLOW
+───────────────────────────────────────────────────────────────────────────── */
+.search-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--gold-warm), 0 0 30px rgba(212, 168, 83, 0.25);
+  border-color: var(--gold-warm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE INTRO OVERLAY
+───────────────────────────────────────────────────────────────────────────── */
+.page-intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    🕯️  KITCHEN MODE  —  Feature 9
    Applied via data-theme="kitchen" on <body>
 ───────────────────────────────────────────────────────────────────────────── */
 [data-theme="kitchen"] {
-  /* Override design tokens with warm amber-lit dark kitchen palette */
-  --background: 24 100% 5%;       /* #1A0E00 */
-  --foreground: 38 67% 88%;       /* wheat — #F5DEB3 */
-  --card: 24 100% 7%;             /* #241200 */
+  --background: 24 100% 5%;
+  --foreground: 38 67% 88%;
+  --card: 24 100% 7%;
   --card-foreground: 38 67% 88%;
   --popover: 24 100% 7%;
   --popover-foreground: 38 67% 88%;
-  --primary: 33 100% 50%;         /* amber flame — #FF8C00 */
+  --primary: 33 100% 50%;
   --primary-foreground: 24 100% 5%;
   --secondary: 24 80% 10%;
   --secondary-foreground: 38 67% 88%;
   --muted: 24 60% 9%;
-  --muted-foreground: 34 30% 55%; /* aged parchment — #C4A882 */
+  --muted-foreground: 34 30% 55%;
   --accent: 33 100% 50%;
   --accent-foreground: 38 67% 88%;
   --border: 40 60% 33% / 0.15;
@@ -75,7 +446,6 @@
   --ring: 33 100% 50%;
 }
 
-/* Wood-grain texture overlay in kitchen mode */
 [data-theme="kitchen"] body,
 body[data-theme="kitchen"] {
   background-image: url('/textures/wood-grain.png');
@@ -83,7 +453,6 @@ body[data-theme="kitchen"] {
   background-size: 400px 400px;
 }
 
-/* Warm vignette on all pages */
 [data-theme="kitchen"] #root::before {
   content: '';
   position: fixed;
@@ -93,7 +462,6 @@ body[data-theme="kitchen"] {
   z-index: 9999;
 }
 
-/* Candlelight flicker on the masthead */
 [data-theme="kitchen"] header {
   animation: candleflicker 3s ease-in-out infinite alternate;
 }
@@ -106,28 +474,13 @@ body[data-theme="kitchen"] {
   100% { filter: brightness(1.02) sepia(0.1); }
 }
 
-/* Article text feels like reading by candlelight */
 [data-theme="kitchen"] article p {
   text-shadow: 0 0 30px rgba(255, 140, 0, 0.1);
   line-height: 1.9;
 }
 
-/* Gold border accent on cards in kitchen mode */
 [data-theme="kitchen"] .border-border {
   border-color: rgba(212, 168, 83, 0.2);
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   BASE STYLES
-───────────────────────────────────────────────────────────────────────────── */
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground font-sans;
-  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -137,14 +490,14 @@ body[data-theme="kitchen"] {
   .font-serif-display {
     font-family: 'Playfair Display', Georgia, serif;
   }
-  
+
   .text-gold-gradient {
     background: linear-gradient(135deg, hsl(40 55% 58%), hsl(45 70% 70%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .gold-underline {
     position: relative;
   }
@@ -157,13 +510,24 @@ body[data-theme="kitchen"] {
     height: 1px;
     background: linear-gradient(90deg, transparent, hsl(40 55% 58%), transparent);
   }
-  
+
   .reading-progress {
     background: linear-gradient(90deg, hsl(40 55% 58%), hsl(12 70% 47%));
   }
 
-  /* Will-change hints for GPU-accelerated parallax elements */
   .parallax-gpu {
     will-change: transform;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION
+───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  body { animation: none; }
 }
