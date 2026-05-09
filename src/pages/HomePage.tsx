@@ -64,8 +64,13 @@ export default function HomePage() {
     return matchCat && matchSearch;
   });
 
+  const [tagline, setTagline] = useState("");
+  const fullTagline = "The hidden histories of what you eat";
+
   const hero = filtered[0];
   const rest = filtered.slice(1);
+
+  const [heroTitleChars, setHeroTitleChars] = useState<string[]>([]);
 
   const randomArticle = () => {
     const rand = articles[Math.floor(Math.random() * articles.length)];

@@ -55,14 +55,86 @@ export default function ArticlePage() {
   useParallaxEffects();
   useReadingSpotlight();
 
+  const renderFact = (fact: string) => {
+    return fact.replace(/(\d+(?:,\d+)*(?:\.\d+)?)/g, (match) => {
+      const num = parseFloat(match.replace(/,/g, ''));
+      return `<span class="fact-number" data-target="${num}">${match}</span>`;
+    });
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     const onScroll = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(h > 0 ? (window.scrollY / h) * 100 : 0);
     };
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          const target = entry.target as HTMLElement;
+          target.style.opacity = entry.isIntersecting ? "1" : "0.5";
+          target.style.transition = "opacity 0.4s ease";
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    document.querySelectorAll<HTMLElement>(".prose-custom p").forEach(p => {
+      p.style.opacity = "0.5";
+      observer.observe(p);
+    });
+
+    // Fast facts counter
+    const counterObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = parseFloat(entry.target.getAttribute('data-target') || '0');
+          animateCounter(entry.target as HTMLElement, target);
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    });
+
+    document.querySelectorAll('.fact-number').forEach(el => counterObserver.observe(el));
+
     window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, [slug]);
+
+  const animateCounter = (element: HTMLElement, target: number, duration = 1500) => {
+    let start = 0;
+    const increment = target / (duration / 16);
+    const timer = window.setInterval(() => {
+      start += increment;
+      element.textContent = Math.floor(start).toLocaleString();
+      if (start >= target) {
+        element.textContent = target.toLocaleString();
+        window.clearInterval(timer);
+      }
+    }, 16);
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const element = entry.target as HTMLElement;
+          const target = parseInt(element.dataset.target || "0", 10);
+          if (target > 0) {
+            animateCounter(element, target);
+            observer.unobserve(element);
+          }
+        }
+      });
+    }, { threshold: 0.4 });
+
+    document.querySelectorAll<HTMLElement>(".fact-number").forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
   }, [slug]);
 
   if (!article)
