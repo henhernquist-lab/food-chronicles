@@ -1,12 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Search, Dice5 } from "lucide-react";
-import { articles, categories } from "@/data/articles";
+import { ArrowRight, Search, Dice5, RefreshCw } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+import { articles as staticArticles, categories } from "@/data/articles";
 import { articleImages } from "@/data/articleImages";
 import { ArticleCard } from "@/components/ArticleCard";
 import { KitchenModeToggle } from "@/components/KitchenModeToggle";
 import { DigestSignup } from "@/components/DigestSignup";
+import type { Article } from "@/data/articles";
+
+// ── Supabase client (uses Vite env vars) ──────────────────────────────────────
+const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  as string | undefined;
+const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabase     = supabaseUrl && supabaseAnon
+  ? createClient(supabaseUrl, supabaseAnon)
+  : null;
 
 // ── Category glow palette ──────────────────────────────────────────────────
 const CAT_META: Record<string, { color: string; glow: string }> = {
@@ -36,6 +45,13 @@ function useTypewriter(text: string, speed = 45, startDelay = 1400) {
   return displayed;
 }
 
+// ── Helper: is an article published today? ────────────────────────────────
+function isToday(dateStr: string | undefined): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  return dateStr.startsWith(today);
+}
+
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch]                 = useState("");
@@ -43,6 +59,56 @@ export default function HomePage() {
   const heroRef                             = useRef<HTMLDivElement>(null);
   const navigate                            = useNavigate();
   const tagline                             = useTypewriter("The hidden histories of what you eat");
+
+  // ── Real-time article count from Supabase ─────────────────────────────────
+  const [liveCount, setLiveCount]     = useState<number>(staticArticles.length);
+  const [todaySlug, setTodaySlug]     = useState<string | null>(null);
+
+  // ── Admin trigger state ───────────────────────────────────────────────────
+  const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
+  const [generating, setGenerating]   = useState(false);
+  const [genResult, setGenResult]     = useState<string | null>(null);
+
+  // Fetch live count + today's article slug from Supabase
+  const fetchLiveData = useCallback(async () => {
+    if (!supabase) return;
+    try {
+      // Count
+      const { count } = await supabase
+        .from("articles")
+        .select("*", { count: "exact", head: true })
+        .eq("is_published", true);
+      if (count !== null) setLiveCount(count);
+
+      // Today's article
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const { data } = await supabase
+        .from("articles")
+        .select("slug, local_date")
+        .eq("is_published", true)
+        .gte("local_date", today)
+        .order("published_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) setTodaySlug(data[0].slug);
+    } catch { /* non-fatal */ }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveData();
+
+    // Supabase Realtime — increment counter when a new article is inserted
+    if (!supabase) return;
+    const channel = supabase
+      .channel("articles-live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "articles" },
+        () => { fetchLiveData(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchLiveData]);
 
   // Parallax on hero
   useEffect(() => {
@@ -56,7 +122,7 @@ export default function HomePage() {
 
   const allCats = ["All", ...categories];
 
-  const filtered = articles.filter(a => {
+  const filtered = staticArticles.filter(a => {
     const matchCat    = activeCategory === "All" || a.category === activeCategory;
     const matchSearch = !search ||
       a.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -64,15 +130,58 @@ export default function HomePage() {
     return matchCat && matchSearch;
   });
 
-  const hero = filtered[0];
-  const rest = filtered.slice(1);
+  // Pin today's article to the top if it exists in the static list
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const aToday = isToday((a as Article & { local_date?: string }).local_date);
+    const bToday = isToday((b as Article & { local_date?: string }).local_date);
+    if (aToday && !bToday) return -1;
+    if (!aToday && bToday) return 1;
+    return 0;
+  });
+
+  const hero = sortedFiltered[0];
+  const rest = sortedFiltered.slice(1);
 
   const randomArticle = () => {
-    const rand = articles[Math.floor(Math.random() * articles.length)];
+    const rand = staticArticles[Math.floor(Math.random() * staticArticles.length)];
     navigate(`/article/${rand.slug}`);
   };
 
   const heroCat = hero ? (CAT_META[hero.category] ?? CAT_META["All"]) : CAT_META["All"];
+
+  // Admin: trigger article generation
+  const handleGenerate = async () => {
+    if (!supabaseUrl || !supabaseAnon) {
+      setGenResult("❌ Supabase env vars not set");
+      return;
+    }
+    setGenerating(true);
+    setGenResult(null);
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/generate-daily-article`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseAnon}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setGenResult(`✅ Generated: ${data.article}`);
+        fetchLiveData();
+      } else {
+        setGenResult(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      setGenResult(`❌ Network error: ${String(err)}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "#0C0A08" }}>
@@ -99,7 +208,7 @@ export default function HomePage() {
           className="flex items-center justify-center gap-3 md:gap-6 text-[10px] md:text-xs tracking-[0.25em] uppercase font-mono mb-6"
           style={{ color: "#8B6914" }}
         >
-          <span>Vol. I — No. {String(articles.length).padStart(2, "0")}</span>
+          <span>Vol. I — No. {String(liveCount).padStart(2, "0")}</span>
           <span className="w-1 h-1 rounded-full bg-gold-deep" />
           <span>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
           <span className="hidden md:inline w-1 h-1 rounded-full bg-gold-deep" />
@@ -134,7 +243,7 @@ export default function HomePage() {
           <span className="animate-pulse">|</span>
         </div>
 
-        {/* Meta counters */}
+        {/* Live article counter */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -143,10 +252,20 @@ export default function HomePage() {
           style={{ color: "rgba(250,240,220,0.5)" }}
         >
           <span>
-            <span className="font-semibold" style={{ color: "#D4A853" }}>{articles.length}</span> stories
+            <motion.span
+              key={liveCount}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="font-semibold"
+              style={{ color: "#D4A853" }}
+            >
+              {liveCount}
+            </motion.span>
+            {" "}food histories and counting
           </span>
           <span className="w-1 h-1 rounded-full bg-gold-deep" />
-          <span className="hidden md:inline">Updated weekly</span>
+          <span className="hidden md:inline">New story every morning</span>
         </motion.div>
       </header>
 
@@ -167,7 +286,7 @@ export default function HomePage() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-mono" style={{ color: "#8B6914" }}>{articles.length} food histories</span>
+          <span className="text-sm font-mono" style={{ color: "#8B6914" }}>{liveCount} food histories</span>
           <button
             onClick={randomArticle}
             className="p-2 rounded-sm transition-colors"
@@ -254,7 +373,7 @@ export default function HomePage() {
 
           {/* Content */}
           <div className="relative z-10 h-full flex flex-col justify-end max-w-7xl mx-auto px-6 md:px-12 pb-20 md:pb-32">
-            {/* Live pill */}
+            {/* Today's Story / Live pill */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -263,7 +382,7 @@ export default function HomePage() {
             >
               <span className="live-dot" />
               <span className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.25em] text-red-400">
-                Today's Story
+                {todaySlug && hero.slug === todaySlug ? "Today's Story" : "Latest Story"}
               </span>
             </motion.div>
 
@@ -394,6 +513,36 @@ export default function HomePage() {
             <span>·</span>
             <Link to="/suggest" className="hover:text-gold-warm transition-colors">📋 Coming Soon</Link>
           </div>
+
+          {/* ── ADMIN TRIGGER — only visible at ?admin=true ─────────────── */}
+          {isAdmin && (
+            <div className="mt-12 p-6 rounded-xl border" style={{ borderColor: "rgba(212,168,83,0.3)", background: "rgba(28,21,16,0.8)" }}>
+              <p className="text-xs font-mono uppercase tracking-[0.2em] mb-4" style={{ color: "#8B6914" }}>
+                🔐 Admin Panel — Article Generation
+              </p>
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-mono uppercase tracking-[0.15em] transition-all disabled:opacity-50"
+                style={{
+                  background: generating ? "rgba(212,168,83,0.2)" : "rgba(212,168,83,0.15)",
+                  border: "1px solid rgba(212,168,83,0.4)",
+                  color: "#D4A853",
+                }}
+              >
+                <RefreshCw size={14} className={generating ? "animate-spin" : ""} />
+                {generating ? "Generating…" : "🔄 Generate Article Now"}
+              </button>
+              {genResult && (
+                <p className="mt-3 text-sm font-mono" style={{ color: genResult.startsWith("✅") ? "#4ade80" : "#f87171" }}>
+                  {genResult}
+                </p>
+              )}
+              <p className="mt-3 text-[10px] font-mono" style={{ color: "rgba(250,240,220,0.3)" }}>
+                Access: yourdomain.com?admin=true
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
