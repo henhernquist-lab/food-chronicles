@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -33,27 +34,29 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
 
-        {/* ── Visual-only global overlays (no routing / logic impact) ── */}
-        <CustomCursor />
-        <ParticleField />
-        {!introSeen && <PageIntro onComplete={handleIntroComplete} />}
+          {/* ── Visual-only global overlays (no routing / logic impact) ── */}
+          <CustomCursor />
+          <ParticleField />
+          {!introSeen && <PageIntro onComplete={handleIntroComplete} />}
 
-        <BrowserRouter>
-          <FoodSommelier />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/article/:slug" element={<ArticlePage />} />
-            <Route path="/suggest" element={<SuggestPage />} />
-            <Route path="/admin/submissions" element={<AdminSubmissions />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+          <BrowserRouter>
+            <FoodSommelier />
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/article/:slug" element={<ArticlePage />} />
+              <Route path="/suggest" element={<SuggestPage />} />
+              <Route path="/admin/submissions" element={<AdminSubmissions />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
