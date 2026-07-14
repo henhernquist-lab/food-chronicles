@@ -15,7 +15,8 @@
 // script's first move on every dispatch is fetching /context to resume
 // exactly where the last dispatch left off.
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync } from 'node:fs'
+import { dirname, normalize, isAbsolute } from 'node:path'
 import { execSync } from 'node:child_process'
 import { blockingFindings } from './lib/analyzers.mjs'
 
@@ -33,12 +34,20 @@ if (!GOAL_RUN_ID || !CALLBACK || !TOKEN) {
   process.exit(1)
 }
 
-async function api(method, path, body) {
+async function api(method, path, body, { timeoutMs = 45000 } = {}) {
+  // Hard timeout on every call — a hung connection (a Vercel function that
+  // never returns a response, a stuck GitHub commit) must NOT hang the whole
+  // run. On abort the call fails like any other transport error, the step fails
+  // gracefully, and the loop continues to finalize. Default 45s covers the fast
+  // DB/GitHub callbacks; the LLM call passes a longer budget (see llm()).
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(CALLBACK + path, {
       method,
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
       body: body ? JSON.stringify(body) : undefined,
+      signal: ctrl.signal,
     })
     // A Vercel function timeout (e.g. the 504 on a slow completion) returns an
     // HTML body, not JSON — catch that so it surfaces as a transport failure
@@ -46,7 +55,10 @@ async function api(method, path, body) {
     const json = await res.json().catch(() => ({ error: `non-JSON response (HTTP ${res.status})` }))
     return { ok: res.ok, status: res.status, json }
   } catch (e) {
-    return { ok: false, status: 0, json: { error: 'network: ' + (e && e.message || e) } }
+    const aborted = e && e.name === 'AbortError'
+    return { ok: false, status: 0, json: { error: aborted ? `request timed out after ${timeoutMs}ms` : 'network: ' + (e && e.message || e) } }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -62,7 +74,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function llm(messages, { retries = 2 } = {}) {
   let last = null
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const { ok, status, json } = await api('POST', '/api/cruise/llm', { goal_run_id: GOAL_RUN_ID, messages })
+    // Generation can legitimately run long (up to the proxy's maxDuration);
+    // give it well over that so a real slow completion isn't aborted, while a
+    // truly hung connection still eventually fails instead of stalling forever.
+    const { ok, status, json } = await api('POST', '/api/cruise/llm', { goal_run_id: GOAL_RUN_ID, messages }, { timeoutMs: 310000 })
     if (json && json.error === 'budget_exceeded') return { budgetExceeded: true }
     if (ok && json && typeof json.text === 'string' && json.text.trim()) {
       return { text: json.text, finishReason: json.finish_reason ?? null }
@@ -100,19 +115,20 @@ function extractJson(text) {
 }
 
 // Parse the marker-delimited editor response into { files, note, noChanges }.
-// No JSON escaping of file bodies — content is whatever sits between the
-// ===FILE:...=== and ===ENDFILE=== markers, verbatim. matchedAny is false only
-// when the model produced neither a file block nor the NO-CHANGES sentinel,
-// i.e. a genuinely malformed response worth surfacing.
+// No JSON escaping of file bodies — content is verbatim between markers. Two
+// block kinds: FILE (create / full-replace, content = whole file) and APPEND
+// (content = only the chunk to add to the end of an existing file). APPEND lets
+// a large file be built across several small steps whose per-call OUTPUT stays
+// well under the LLM proxy timeout. matchedAny is false only when the model
+// produced no block and no NO-CHANGES sentinel — a genuinely malformed response.
 function parseEdits(text) {
   const raw = String(text || '')
   const files = []
-  const re = /===FILE:\s*(.+?)\s*===\r?\n([\s\S]*?)\r?\n===ENDFILE===/g
+  const fileRe = /===FILE:\s*(.+?)\s*===\r?\n([\s\S]*?)\r?\n===ENDFILE===/g
+  const appendRe = /===APPEND:\s*(.+?)\s*===\r?\n([\s\S]*?)\r?\n===ENDAPPEND===/g
   let m
-  while ((m = re.exec(raw)) !== null) {
-    const path = m[1].trim()
-    if (path) files.push({ path, content: m[2] })
-  }
+  while ((m = fileRe.exec(raw)) !== null) { if (m[1].trim()) files.push({ path: m[1].trim(), content: m[2], mode: 'replace' }) }
+  while ((m = appendRe.exec(raw)) !== null) { if (m[1].trim()) files.push({ path: m[1].trim(), content: m[2], mode: 'append' }) }
   const noChanges = /===\s*NO CHANGES\s*===/.test(raw)
   const noteM = raw.match(/===NOTE:\s*([\s\S]*?)===/)
   const note = noteM ? noteM[1].trim().slice(0, 200) : ''
@@ -224,7 +240,9 @@ async function main() {
 
 If the goal is unsafe, destructive without specifics, or too ambiguous to act on without a real risk of doing the wrong thing (e.g. "delete the old auth system" with no detail on what replaces it or what's safe to remove), respond: {"safe": false, "question": "<one sharp clarifying question>"}.
 
-Otherwise respond: {"safe": true, "plan": ["<step 1 description>", "<step 2 description>", ...]}. Each step should be a small, concrete, independently-committable unit of work (e.g. "Add a ThemeProvider context in src/theme/theme-context.tsx" not "add dark mode"). Mention concrete file paths in step descriptions where you can — later steps use them to know what to read. Keep the plan to at most ${MAX_PLAN_STEPS} steps and only as many as the goal actually needs.` },
+Otherwise respond: {"safe": true, "plan": ["<step 1 description>", "<step 2 description>", ...]}. Each step should be a small, concrete, independently-committable unit of work (e.g. "Add a ThemeProvider context in src/theme/theme-context.tsx" not "add dark mode"). Mention concrete file paths in step descriptions where you can — later steps use them to know what to read. Keep the plan to at most ${MAX_PLAN_STEPS} steps and only as many as the goal actually needs.
+
+Keep each step small enough that ONE model call can generate its content quickly — a single call must finish in under a minute, so no step should generate a large file or a lot of content at once. When a piece of work would produce a lot at once (a full theme's CSS custom properties, a big config, many similar entries), SPLIT it into several steps: one to create the file with the first chunk, then follow-up steps each phrased as "Add/append <the next chunk> to <that same file>". For example, instead of one "Add CSS custom properties for light and dark themes to src/index.css", emit: "Create src/index.css with the light-theme :root custom properties", then "Append the .dark theme custom properties to src/index.css", then "Append the @layer base bg-background/text-foreground setup to src/index.css". Prefer more small append steps over one big generation.` },
       { role: 'user', content: `GOAL: ${ctx.goal}${clarifyContext}\n\nREPO OVERVIEW:\n${repoOverview()}` },
     ])
     if (planRes.budgetExceeded) {
@@ -259,7 +277,7 @@ Otherwise respond: {"safe": true, "plan": ["<step 1 description>", "<step 2 desc
   // error doesn't make it look new). An edit is accepted only if it introduces
   // no NEW fingerprints. After each accepted commit the baseline advances to
   // that state, so every step is judged against the last good state.
-  let baselineFp = new Set(blockingFindings(REPO).map((f) => f.fingerprint))
+  let baselineFp = new Set((await blockingFindings(REPO)).map((f) => f.fingerprint))
   const remaining = []
   let capped = false
   // Paths this run has already created/changed (seeded from prior dispatches on
@@ -287,19 +305,27 @@ Otherwise respond: {"safe": true, "plan": ["<step 1 description>", "<step 2 desc
     const editRes = await llm([
       { role: 'system', content: `You are editing files in a checked-out git repo to accomplish one step of a larger goal.
 
-Do NOT use JSON — file contents break JSON escaping. Use this exact marker format instead. For each file you create or replace, emit a block:
+Do NOT use JSON — file contents break JSON escaping. Use these exact marker formats.
+
+To create a new file or fully rewrite one (content = the WHOLE file):
 ===FILE: <repo-relative path>===
 <the COMPLETE new file content, verbatim — no diff, no snippet, no fencing>
 ===ENDFILE===
 
-After all file blocks, emit one line:
+To ADD a chunk to the END of a file that already exists (content = ONLY the new lines):
+===APPEND: <repo-relative path>===
+<only the new content to append — not the whole file>
+===ENDAPPEND===
+
+After all blocks, emit one line:
 ===NOTE: <one-line summary of what you changed>===
 
 If the step needs no file changes (already satisfied), output exactly one line and nothing else:
 ===NO CHANGES===
 
 Rules:
-- Output only file blocks + the NOTE line (or NO CHANGES). No prose, no markdown fences.
+- Output only blocks + the NOTE line (or NO CHANGES). No prose, no markdown fences.
+- If the step says to ADD / APPEND a chunk to an existing file, use ===APPEND:=== and emit ONLY that chunk — never regenerate the whole file. This keeps your output small. Use ===FILE:=== only to create a new file or when a full rewrite is genuinely required. Appended CSS blocks (a second :root {}, .dark {}, or @layer base {}) are valid and merge in the cascade.
 - Match the repo's existing conventions, imports, and framework idioms — read the provided existing files first.
 - Import ONLY from paths that appear in REPO FILES or FILES CHANGED THIS RUN below, or from installed packages. Never invent a module path — if you need a helper that doesn't exist yet, define it inline or create the file in this same response.
 - Include every import your code uses (e.g. React hooks like useState/useEffect). Do not reference an identifier you didn't import or define.` },
@@ -333,14 +359,39 @@ Rules:
     // Write locally and validate before proposing anything — a step that
     // makes tsc/eslint worse gets reverted rather than committed.
     const touched = []
+    let writeError = null
     for (const f of parsed.files) {
-      const isNew = !existsSync(f.path)
-      writeFileSync(f.path, f.content, 'utf8')
-      touched.push({ path: f.path, content: f.content, is_new: isNew })
+      // Keep writes inside the checkout: reject absolute paths and any that
+      // climb out via '..' (malformed/hostile path from the model).
+      const p = normalize(f.path)
+      if (isAbsolute(p) || p.split(/[\\/]/).includes('..')) { writeError = `unsafe path "${f.path}"`; break }
+      const existed = existsSync(p)
+      // APPEND emits only a chunk; the file on disk (and the commit) must be the
+      // full concatenation. FILE is the whole file as-is. Either way `touched`
+      // carries the COMPLETE content — the small thing is the model's output.
+      let content = f.content
+      if (f.mode === 'append') {
+        const prior = existed ? readFileSync(p, 'utf8') : ''
+        const sep = prior && !prior.endsWith('\n') ? '\n' : ''
+        content = prior + sep + f.content + (f.content.endsWith('\n') ? '' : '\n')
+      }
+      try {
+        // Create parent dirs first — the model routinely puts a new file in a
+        // new directory (e.g. src/context/theme-provider.tsx). writeFileSync
+        // does NOT mkdir, so without this it throws ENOENT and crashed the run.
+        mkdirSync(dirname(p), { recursive: true })
+        writeFileSync(p, content, 'utf8')
+      } catch (e) { writeError = `${(e && e.code) || 'write error'} writing ${p}`; break }
+      touched.push({ path: p, content, is_new: !existed })
+    }
+    if (writeError) {
+      revertTouched(touched) // undo any partial writes from this step
+      await postStep(seq, 'failed', `Could not write files: ${writeError}`)
+      continue
     }
     if (touched.length === 0) { await postStep(seq, 'failed', 'No valid file entries'); continue }
 
-    const afterFindings = blockingFindings(REPO)
+    const afterFindings = await blockingFindings(REPO)
     const newErrors = afterFindings.filter((f) => !baselineFp.has(f.fingerprint))
     if (newErrors.length > 0) {
       // Revert via git — the checkout has no other uncommitted changes at
@@ -362,8 +413,13 @@ Rules:
       break
     }
     if (!applyRes.ok || !applyRes.json?.ok) {
+      // Hard commit failure — treat exactly like a validation revert: undo the
+      // local edit, mark THIS step failed, and continue to the next step. Never
+      // abort the run. The apply route already labels its errors, so don't
+      // double-prefix. (applyRes.json.error already reads e.g. "Commit failed:
+      // GitHub API error 404" or "request timed out after 45000ms".)
       revertTouched(touched)
-      await postStep(seq, 'failed', `Commit failed: ${applyRes.json?.error || applyRes.status}`)
+      await postStep(seq, 'failed', applyRes.json?.error || `Apply failed (HTTP ${applyRes.status})`)
       continue
     }
     filesChanged = applyRes.json.files_changed
