@@ -285,3 +285,20 @@
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #8B6914, #D4A853);
 }
+    /* Light-mode palette – activated when html[data-theme="light"] */
+    --secondary-light: 45 30% 20%;
+    --secondary-foreground-light: 45 10% 98%;
+    --accent-light: 12 60% 52%;
+    --accent-foreground-light: 45 10% 98%;
+    --muted-light: 40 25% 88%;
+    --muted-foreground-light: 40 10% 40%;
+  }
+
+  .light {
+    --secondary: var(--secondary-light);
+    --secondary-foreground: var(--secondary-foreground-light);
+    --accent: var(--accent-light);
+    --accent-foreground: var(--accent-foreground-light);
+    --muted: var(--muted-light);
+    --muted-foreground: var(--muted-foreground-light);
+  }
