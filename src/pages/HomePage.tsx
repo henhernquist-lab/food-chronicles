@@ -548,3 +548,7 @@ export default function HomePage() {
     </div>
   );
 }
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+// Render near the top of the JSX, before the hero section
+<ThemeToggle />
