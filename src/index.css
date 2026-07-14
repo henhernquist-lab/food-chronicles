@@ -933,3 +933,178 @@ body[data-theme="kitchen"] {
   }
   body { animation: none; }
 }
+/* ─────────────────────────────────────────────────────────────────────────────
+   DARK MODE  (default, matches existing dark palette)
+───────────────────────────────────────────────────────────────────────────── */
+.dark {
+  --background: 24 18% 4%;
+  --foreground: 36 25% 90%;
+  --card: 24 15% 8%;
+  --card-foreground: 36 25% 90%;
+  --popover: 24 15% 8%;
+  --popover-foreground: 36 25% 90%;
+  --primary: 40 55% 58%;
+  --primary-foreground: 24 18% 4%;
+  --secondary: 24 12% 14%;
+  --secondary-foreground: 36 25% 90%;
+  --muted: 24 10% 12%;
+  --muted-foreground: 30 10% 50%;
+  --accent: 12 70% 47%;
+  --accent-foreground: 36 25% 95%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 24 10% 16%;
+  --input: 24 10% 16%;
+  --ring: 40 55% 58%;
+  --radius: 0.5rem;
+  --herb: 140 26% 42%;
+  --herb-foreground: 36 25% 95%;
+
+  --sidebar-background: 24 15% 6%;
+  --sidebar-foreground: 36 25% 90%;
+  --sidebar-primary: 40 55% 58%;
+  --sidebar-primary-foreground: 24 18% 4%;
+  --sidebar-accent: 24 12% 14%;
+  --sidebar-accent-foreground: 36 25% 90%;
+  --sidebar-border: 24 10% 16%;
+  --sidebar-ring: 40 55% 58%;
+
+  --gold: 40 55% 58%;
+  --gold-light: 45 70% 70%;
+  --gold-dark: 40 45% 35%;
+  --gold-rgb: 212, 168, 83;
+  --surface: 24 15% 8%;
+  --surface-soft: 24 15% 12%;
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-backdrop: rgba(255, 255, 255, 0.03);
+  --panel-overlay: rgba(12, 10, 8, 0.92);
+  --shadow-soft: 0 18px 55px rgba(0, 0, 0, 0.16);
+  --shadow-strong: 0 28px 90px rgba(0, 0, 0, 0.24);
+  --border-gold-soft: rgba(212, 168, 83, 0.15);
+  --border-gold-strong: rgba(212, 168, 83, 0.4);
+  --text-shadow-gold: 0 0 30px rgba(255, 140, 0, 0.1);
+  --danger-soft: rgba(239, 68, 68, 0.15);
+  --success-soft: rgba(34, 197, 94, 0.1);
+  --cursor-dot: 40 100% 80%;
+  --cursor-outline: 40 100% 65%;
+
+  --bg-dark: #0C0A08;
+  --bg-dark-2: #100C06;
+  --bg-dark-3: #0E0A05;
+  --gold-shimmer-1: #8B6914;
+  --gold-shimmer-2: #D4A853;
+  --gold-shimmer-3: #FFD700;
+  --red-live: #FF4444;
+  --text-light: #F5E6C8;
+  --gold-share: #C9A84C;
+
+  --bg-primary:   #0C0A08;
+  --bg-surface:   #141009;
+  --bg-elevated:  #1C1510;
+  --gold-bright:  #FFD700;
+  --gold-warm:    #D4A853;
+  --gold-deep:    #8B6914;
+  --spice-red:    #C24B2A;
+  --herb-green:   #4A7C59;
+  --cream:        #FAF0DC;
+  --gold-glow:    rgba(212, 168, 83, 0.4);
+  --red-glow:     rgba(194, 75, 42, 0.35);
+  --teal-glow:    rgba(74, 124, 130, 0.35);
+  --purple-glow:  rgba(155, 89, 182, 0.35);
+  --amber-glow:   rgba(230, 165, 60, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIGHT MODE
+───────────────────────────────────────────────────────────────────────────── */
+.light {
+  --background: 36 25% 98%;
+  --foreground: 24 18% 12%;
+  --card: 36 25% 96%;
+  --card-foreground: 24 18% 12%;
+  --popover: 36 25% 96%;
+  --popover-foreground: 24 18% 12%;
+  --primary: 40 55% 45%;
+  --primary-foreground: 36 25% 98%;
+  --secondary: 36 15% 90%;
+  --secondary-foreground: 24 18% 12%;
+  --muted: 36 10% 88%;
+  --muted-foreground: 30 10% 40%;
+  --accent: 12 70% 47%;
+  --accent-foreground: 36 25% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 36 10% 82%;
+  --input: 36 10% 82%;
+  --ring: 40 55% 45%;
+  --radius: 0.5rem;
+  --herb: 140 26% 38%;
+  --herb-foreground: 36 25% 98%;
+
+  --sidebar-background: 36 25% 95%;
+  --sidebar-foreground: 24 18% 12%;
+  --sidebar-primary: 40 55% 45%;
+  --sidebar-primary-foreground: 36 25% 98%;
+  --sidebar-accent: 36 15% 90%;
+  --sidebar-accent-foreground: 24 18% 12%;
+  --sidebar-border: 36 10% 82%;
+  --sidebar-ring: 40 55% 45%;
+
+  --gold: 42 60% 48%;
+  --gold-light: 45 70% 65%;
+  --gold-dark: 40 45% 32%;
+  --gold-rgb: 196, 152, 64;
+  --surface: 36 25% 95%;
+  --surface-soft: 36 25% 91%;
+  --surface-border: rgba(0, 0, 0, 0.08);
+  --surface-backdrop: rgba(0, 0, 0, 0.03);
+  --panel-overlay: rgba(245, 235, 220, 0.92);
+  --shadow-soft: 0 18px 55px rgba(0, 0, 0, 0.08);
+  --shadow-strong: 0 28px 90px rgba(0, 0, 0, 0.12);
+  --border-gold-soft: rgba(196, 152, 64, 0.2);
+  --border-gold-strong: rgba(196, 152, 64, 0.45);
+  --text-shadow-gold: 0 0 30px rgba(196, 152, 64, 0.1);
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --success-soft: rgba(34, 197, 94, 0.08);
+  --cursor-dot: 42 60% 55%;
+  --cursor-outline: 42 60% 45%;
+
+  --bg-dark: #F5ECD7;
+  --bg-dark-2: #EDE4C9;
+  --bg-dark-3: #E8DDB8;
+  --gold-shimmer-1: #B8923E;
+  --gold-shimmer-2: #D4A853;
+  --gold-shimmer-3: #FFD700;
+  --red-live: #C0392B;
+  --text-light: #3A2F1F;
+  --gold-share: #B8923E;
+
+  --bg-primary:   #F5ECD7;
+  --bg-surface:   #EDE4C9;
+  --bg-elevated:  #E8DDB8;
+  --gold-bright:  #D4A853;
+  --gold-warm:    #B8923E;
+  --gold-deep:    #8B6914;
+  --spice-red:    #C24B2A;
+  --herb-green:   #4A7C59;
+  --cream:        #FAF0DC;
+  --gold-glow:    rgba(184, 146, 62, 0.4);
+  --red-glow:     rgba(194, 75, 42, 0.25);
+  --teal-glow:    rgba(74, 124, 130, 0.25);
+  --purple-glow:  rgba(155, 89, 182, 0.25);
+  --amber-glow:   rgba(230, 165, 60, 0.3);
+}
+
+/* Light-mode body background override */
+.light body,
+body.light {
+  background: linear-gradient(135deg, #F5ECD7, #EDE4C9, #E8DDB8);
+  background-size: 400% 400%;
+  animation: bgshift-light 20s ease infinite;
+}
+
+@keyframes bgshift-light {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
