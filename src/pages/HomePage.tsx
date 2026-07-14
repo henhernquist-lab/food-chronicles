@@ -548,3 +548,8 @@ export default function HomePage() {
     </div>
   );
 }
+import { ThemeToggle } from "@/components/ThemeToggle";
+              {/* Theme toggle */}
+              <ThemeToggle />
+
+              {/* Kitchen mode toggle */}
